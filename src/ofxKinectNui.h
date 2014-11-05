@@ -35,6 +35,7 @@ class IDrawPoints;
 /****************************************/
 class ofxKinectNui: public ofxBase3DVideo{
 public:
+
 	ofxKinectNui();
 	virtual ~ofxKinectNui();
 	
@@ -146,18 +147,10 @@ public:
 	ofShortPixels& getDistancePixels();
 	std::vector<BYTE> getSoundBuffer();
 	
-	int getSkeletonPoints(ofPoint* ret[]);
-	int getRawSkeletonPoints(ofPoint* ret[]);
-
-	// allows direct retrieval of the raw points, without copying
-	// to use, use something like this:
-	// const ofPoint* rawpts = kinect.getRaw_ptr();
-	// for ( int k = 0; k < ofxKinectNui::SKELETON_COUNT; k++ ) {
-	//		// jumping to the next skeleton's points >> k * ofxKinectNui::SKELETON_POSITION_COUNT
-	//		const ofPoint* pt = ( rawpts + (  k * ofxKinectNui::SKELETON_POSITION_COUNT + 0 ));
-	// and so on...
+	int getSkeletonPoints( ofPoint* ret[] );
+	int getRawSkeletonPoints( ofPoint* ret[] );
 	const ofPoint* getRaw_ptr() const { return &rawSkeletonPoints[0][0]; }
-
+	const float getConfidenceAt( int i, int j ) const { return skeletonConfidence[ i ][ j ]; }
 
 	ofColor getColorAt(int x, int y);
 	ofColor getColorAt(const ofPoint& point);
@@ -234,6 +227,7 @@ public:
 	}
 
 protected:
+	
 	kinect::nui::Kinect kinect;	///< kinect instance
 
 	ofPixels videoPixels;			///<	video pixels
@@ -247,6 +241,7 @@ protected:
 
 	ofPoint skeletonPoints[SKELETON_COUNT][SKELETON_POSITION_COUNT];	///< joint points of all skeletons
 	ofPoint rawSkeletonPoints[SKELETON_COUNT][SKELETON_POSITION_COUNT];	///< joint points of all skeletons
+	float skeletonConfidence[SKELETON_COUNT][SKELETON_POSITION_COUNT];	///< openni style confidence
 
 	int targetAngle;	///< target angle of kinect tilt
 	
@@ -275,5 +270,6 @@ protected:
 	IDrawPixels* depthDraw_;
 	IDrawPixels* labelDraw_;
 	IDrawPoints* skeletonDraw_;
+
 };
 #endif // OFX_KINECT_NUI_H

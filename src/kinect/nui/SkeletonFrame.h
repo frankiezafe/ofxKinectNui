@@ -86,6 +86,10 @@ namespace kinect {
 				return skeletonData_.SkeletonPositions[index];
 			}
 
+			NUI_SKELETON_POSITION_TRACKING_STATE getConfidence( int index ) {
+				return skeletonData_.eSkeletonPositionTrackingState[ index ];
+			}
+
 			//----------------------------------------------------------
 			/**
 				@brief Get user index

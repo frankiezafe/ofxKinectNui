@@ -42,6 +42,7 @@ ofxKinectNui::ofxKinectNui(){
 	skeletonDraw_ = NULL;
 
 	addKinectListener(this, &ofxKinectNui::pluggedFunc, &ofxKinectNui::unpluggedFunc);
+
 }
 
 //---------------------------------------------------------------------------
@@ -376,6 +377,7 @@ void ofxKinectNui::close(){
 	@brief	update stream data.
 */
 void ofxKinectNui::update(UINT flag){
+
 	if(!kinect.IsInited() || !kinect.IsConnected() || !isOpened()){
 		return;
 	}
@@ -514,44 +516,87 @@ void ofxKinectNui::update(UINT flag){
 
 	}
 	if(flag & UPDATE_FLAG_GROUP_SKELETON){
+
 		// Get the skeleton data of next frame
 		kinect::nui::SkeletonFrame skeleton = kinect.Skeleton().GetNextFrame(30);
-		if(skeleton.IsFoundSkeleton()){
+
+		if( skeleton.IsFoundSkeleton() ){
+
 			bIsFoundSkeleton = true;
 			skeleton.TransformSmooth();
+
 			for(int i = 0; i < kinect::nui::SkeletonFrame::SKELETON_COUNT; ++i){
-				if( skeleton[i].TrackingState() == NUI_SKELETON_TRACKED){
+				
+				if( skeleton[i].TrackingState() == NUI_SKELETON_TRACKED ){
+
 					for(int j = 0; j < kinect::nui::SkeletonData::POSITION_COUNT; ++j){
+						
 						kinect::nui::SkeletonData::SkeletonPoint p = skeleton[i].TransformSkeletonToDepthImage(j, mDepthResolution);
-						skeletonPoints[i][j] = ofPoint(bIsMirror ? p.x : depthWidth - 1 - p.x, p.y, p.depth);
-						rawSkeletonPoints[i][j] = ofPoint(bIsMirror ? skeleton[i][j].x : -skeleton[i][j].x, skeleton[i][j].y, skeleton[i][j].z);            
+						skeletonPoints[i][j] = ofPoint( bIsMirror ? p.x : depthWidth - 1 - p.x, p.y, p.depth );
+						rawSkeletonPoints[i][j] = ofPoint( bIsMirror ? skeleton[i][j].x : -skeleton[i][j].x, skeleton[i][j].y, skeleton[i][j].z );            
+						
+						// OpenNI style confidence
+						skeletonConfidence[i][j] = 0;
+						float d;
+
+						switch( skeleton[i].getConfidence( j ) ) {
+
+							case NUI_SKELETON_POSITION_TRACKED:
+								// closer => better
+								// 1m => 1
+								// 4.5m => 0.25
+								d = ( ( abs( skeleton[i][j].z ) - 1.f ) / 3.5f );
+								if ( d < 0 ) {
+									d = 0;
+								} else if ( d > 1 ) {
+									d = 1;
+								}
+								skeletonConfidence[ i ][ j ] = 0.15f + ( 1 - d ) * 0.85f;
+								break;
+
+							case NUI_SKELETON_POSITION_INFERRED:
+								skeletonConfidence[ i ][ j ] = 0.1f;
+								break;
+
+							default:
+								break;
+
+						}
+
 					}
-				}else{
+
+				} else {
+
 					// if skeleton is not tracked, set top z data negative.
 					skeletonPoints[i][0].z = -1;
 					rawSkeletonPoints[i][0].z = -1;
 					continue;
+
 				}
+
 			}
-		}
-		else {
+		} else {
+
 			bIsFoundSkeleton = false;
 			for(int i = 0; i < kinect::nui::SkeletonFrame::SKELETON_COUNT; ++i){
 				// if skeleton is not tracked, set top z data negative.
 				skeletonPoints[i][0].z = -1;
 				rawSkeletonPoints[i][0].z = -1;
 			}
+
 		}
-	}else{
+	} else {
 		cout << "false2" << endl;
 		bIsFoundSkeleton = false;
 	}
 
 	if(flag & UPDATE_FLAG_GROUP_AUDIO){
+
 		soundBuffer = kinect.AudioStream().Read();
 		audioBeamAngle = (float)kinect.AudioStream().GetAudioBeamAngle();
 		audioAngle = (float)kinect.AudioStream().GetAudioAngle();
 		audioAngleConfidence = (float)kinect.AudioStream().GetAudioAngleConfidence();
+
 	}
 
 	bIsFrameNew = true;
