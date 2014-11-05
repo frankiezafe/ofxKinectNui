@@ -149,6 +149,16 @@ public:
 	int getSkeletonPoints(ofPoint* ret[]);
 	int getRawSkeletonPoints(ofPoint* ret[]);
 
+	// allows direct retrieval of the raw points, without copying
+	// to use, use something like this:
+	// const ofPoint* rawpts = kinect.getRaw_ptr();
+	// for ( int k = 0; k < ofxKinectNui::SKELETON_COUNT; k++ ) {
+	//		// jumping to the next skeleton's points >> k * ofxKinectNui::SKELETON_POSITION_COUNT
+	//		const ofPoint* pt = ( rawpts + (  k * ofxKinectNui::SKELETON_POSITION_COUNT + 0 ));
+	// and so on...
+	const ofPoint* getRaw_ptr() const { return &rawSkeletonPoints[0][0]; }
+
+
 	ofColor getColorAt(int x, int y);
 	ofColor getColorAt(const ofPoint& point);
 
