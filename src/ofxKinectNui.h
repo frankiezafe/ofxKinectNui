@@ -214,6 +214,8 @@ public:
 	// confidence related
 	void setFovLimit( float l ) { fov_limit = l; }
 	float getFovLimit() { return fov_limit; }
+	float getFovHalfHorizontal() { return fov_half_h; }
+	float getFovHalfVertical() { return fov_half_v; }
 
 public:
 
