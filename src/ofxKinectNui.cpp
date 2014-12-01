@@ -616,7 +616,7 @@ float ofxKinectNui::processConfidence( kinect::nui::SkeletonData* skData, ofPoin
 	// if the point is too close from the FOV,
 	// confidence drops down
 	float anglh = atan2f( rawp->x, rawp->z );
-	float anglv = atan2f( rawp->y, rawp->x );
+	float anglv = atan2f( rawp->y, rawp->z );
 	float ratioh = 1;
 	float ratiov = 1;
 	if ( 
