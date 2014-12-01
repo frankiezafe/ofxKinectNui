@@ -43,6 +43,10 @@ ofxKinectNui::ofxKinectNui(){
 
 	addKinectListener(this, &ofxKinectNui::pluggedFunc, &ofxKinectNui::unpluggedFunc);
 
+	fov_limit = FOV_LIMIT_DISTANCE;
+	fov_half_h = NUI_CAMERA_DEPTH_NOMINAL_HORIZONTAL_FOV * 0.5f;
+	fov_half_v = NUI_CAMERA_DEPTH_NOMINAL_VERTICAL_FOV * 0.5f;
+
 }
 
 //---------------------------------------------------------------------------
@@ -534,34 +538,8 @@ void ofxKinectNui::update(UINT flag){
 						kinect::nui::SkeletonData::SkeletonPoint p = skeleton[i].TransformSkeletonToDepthImage(j, mDepthResolution);
 						skeletonPoints[i][j] = ofPoint( bIsMirror ? p.x : depthWidth - 1 - p.x, p.y, p.depth );
 						rawSkeletonPoints[i][j] = ofPoint( bIsMirror ? skeleton[i][j].x : -skeleton[i][j].x, skeleton[i][j].y, skeleton[i][j].z );            
-						
-						// OpenNI style confidence
-						skeletonConfidence[i][j] = 0;
-						float d;
-
-						switch( skeleton[i].getConfidence( j ) ) {
-
-							case NUI_SKELETON_POSITION_TRACKED:
-								// closer => better
-								// 1m => 1
-								// 4.5m => 0.25
-								d = ( ( abs( skeleton[i][j].z ) - 1.f ) / 3.5f );
-								if ( d < 0 ) {
-									d = 0;
-								} else if ( d > 1 ) {
-									d = 1;
-								}
-								skeletonConfidence[ i ][ j ] = 0.15f + ( 1 - d ) * 0.85f;
-								break;
-
-							case NUI_SKELETON_POSITION_INFERRED:
-								skeletonConfidence[ i ][ j ] = 0.1f;
-								break;
-
-							default:
-								break;
-
-						}
+						skeletonConfidence[i][j] = processConfidence( &skeleton[i], &rawSkeletonPoints[i][j], i, j );
+						continue;
 
 					}
 
@@ -570,6 +548,7 @@ void ofxKinectNui::update(UINT flag){
 					// if skeleton is not tracked, set top z data negative.
 					skeletonPoints[i][0].z = -1;
 					rawSkeletonPoints[i][0].z = -1;
+					skeletonConfidence[i][0] = 0;
 					continue;
 
 				}
@@ -582,6 +561,7 @@ void ofxKinectNui::update(UINT flag){
 				// if skeleton is not tracked, set top z data negative.
 				skeletonPoints[i][0].z = -1;
 				rawSkeletonPoints[i][0].z = -1;
+				skeletonConfidence[i][0] = 0;
 			}
 
 		}
@@ -600,6 +580,75 @@ void ofxKinectNui::update(UINT flag){
 	}
 
 	bIsFrameNew = true;
+}
+
+float ofxKinectNui::processConfidence( kinect::nui::SkeletonData* skData, ofPoint* rawp, int skID, int rawpID ) {
+
+	if ( rawp->z == 0 ) {
+		return 0;
+	}
+
+	float conf = 0;
+	float d;
+
+	switch( skData->getConfidence( rawpID ) ) {
+		case NUI_SKELETON_POSITION_TRACKED:
+			// closer => better
+			// 1.5m => 1
+			// 4.5m => 0.15
+			d = ( ( abs( rawp->z ) - 1.5f ) / 3.f );
+			if ( d < 0 ) {
+				d = 0;
+			} else if ( d > 1 ) {
+				d = 1;
+			}
+			conf = 0.15f + ( 1 - d ) * 0.85f;
+			break;
+		case NUI_SKELETON_POSITION_INFERRED:
+			conf = 0.1f;
+			break;
+		default:
+			return 0;
+	}
+
+	// second pass:
+	// if the point is too close from the FOV,
+	// confidence drops down
+	float anglh = atan2f( rawp->x, rawp->z );
+	float anglv = atan2f( rawp->y, rawp->x );
+	float ratioh = 1;
+	float ratiov = 1;
+	if ( 
+		( anglh < 0 && anglh - -fov_half_h < fov_limit ) ||
+		( anglh > 0 && fov_half_h - anglh < fov_limit )
+		) {
+			if ( anglh < 0 ) {
+				ratioh = ( anglh + fov_half_h ) / fov_limit;
+			}
+			if ( anglh > 0 ) {
+				ratioh = ( fov_half_h - anglh ) / fov_limit;
+			}
+	}
+	if ( 
+		( anglv < 0 && anglv - -fov_half_v < fov_limit ) ||
+		( anglv > 0 && fov_half_v - anglv < fov_limit )
+		) {
+			if ( anglv < 0 ) {
+				ratiov = ( anglv + fov_half_v ) / fov_limit;
+			}
+			if ( anglv > 0 ) {
+				ratiov = ( fov_half_v - anglv ) / fov_limit;
+			}
+	}
+
+	// never more than / 10
+	if ( ratioh <= 0 || ratiov <= 0 ) {
+		return conf * 0.1f;
+	} else {
+		return conf * ( 0.1f + ( ratioh * ratiov ) * 0.9f ) ;
+	}
+
+
 }
 
 //---------------------------------------------------------------------------

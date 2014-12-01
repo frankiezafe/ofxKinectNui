@@ -18,6 +18,8 @@
 #include "ofMain.h"
 #include "ofxBase3DVideo.h"
 
+#define FOV_LIMIT_DISTANCE 0.08726647f // 5 degree in radian
+
 class IDrawPixels;
 class IDrawPoints;
 
@@ -209,7 +211,12 @@ public:
 		kinect.RemoveKinectListener(object);
 	}
 
+	// confidence related
+	void setFovLimit( float l ) { fov_limit = l; }
+	float getFovLimit() { return fov_limit; }
+
 public:
+
 	const static int KINECT_PLAYERS_INDEX_NUM = 8;
 
 	static int getActiveCount(){
@@ -270,6 +277,12 @@ protected:
 	IDrawPixels* depthDraw_;
 	IDrawPixels* labelDraw_;
 	IDrawPoints* skeletonDraw_;
+
+	// confidence related
+	float fov_limit;
+	float fov_half_h;
+	float fov_half_v;
+	float processConfidence( kinect::nui::SkeletonData* skData, ofPoint* rawp, int skID, int rawpID );
 
 };
 #endif // OFX_KINECT_NUI_H
