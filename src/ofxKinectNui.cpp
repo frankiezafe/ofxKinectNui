@@ -589,20 +589,21 @@ float ofxKinectNui::processConfidence( kinect::nui::SkeletonData* skData, ofPoin
 	}
 
 	float conf = 0;
-	float d;
 
 	switch( skData->getConfidence( rawpID ) ) {
 		case NUI_SKELETON_POSITION_TRACKED:
 			// closer => better
 			// 1.5m => 1
 			// 4.5m => 0.15
-			d = ( ( abs( rawp->z ) - 1.5f ) / 3.f );
-			if ( d < 0 ) {
-				d = 0;
-			} else if ( d > 1 ) {
-				d = 1;
+			{
+				float d = ( ( abs( rawp->z ) - 1.5f ) / 3.f );
+				if ( d < 0 ) {
+					d = 0;
+				} else if ( d > 1 ) {
+					d = 1;
+				}
+				conf = 0.15f + ( 1 - d ) * 0.85f;
 			}
-			conf = 0.15f + ( 1 - d ) * 0.85f;
 			break;
 		case NUI_SKELETON_POSITION_INFERRED:
 			conf = 0.1f;
