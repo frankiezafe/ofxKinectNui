@@ -44,8 +44,8 @@ ofxKinectNui::ofxKinectNui(){
 	addKinectListener(this, &ofxKinectNui::pluggedFunc, &ofxKinectNui::unpluggedFunc);
 
 	fov_limit = FOV_LIMIT_DISTANCE;
-	fov_half_h = NUI_CAMERA_DEPTH_NOMINAL_HORIZONTAL_FOV * 0.5f;
-	fov_half_v = NUI_CAMERA_DEPTH_NOMINAL_VERTICAL_FOV * 0.5f;
+	fov_half_h = ( NUI_CAMERA_DEPTH_NOMINAL_HORIZONTAL_FOV * 0.5f ) / 180.f * PI;
+	fov_half_v = ( NUI_CAMERA_DEPTH_NOMINAL_VERTICAL_FOV * 0.5f ) / 180.f * PI;
 
 }
 
